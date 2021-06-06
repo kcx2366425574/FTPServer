@@ -1,11 +1,14 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 __author__ = 'yinjia'
 
 
-import os,sys
+import os
+import sys
+
+from FTPClient.bin import ftpclient
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from bin import ftpclient
 
 if __name__ == "__main__":
     ftpclient.run()

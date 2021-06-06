@@ -1,19 +1,24 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 __author__ = 'yinjia'
 
 
-import os,sys,socket
+import os
+import socket
+import sys
+
+from FTPClient.config import settings
+from FTPClient.config import code
+from FTPClient.lib import common
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from config import settings
-from config import code
-from lib import common
 
 logger = common.Logger('client').getlog()
 
+
 class client(object):
-    def __init__(self,server_addr, server_port):
-        self.username =""
+    def __init__(self, server_addr, server_port):
+        self.username = ""
         self.totalspace = 0
         self.userspace = 0
         self.client = socket.socket()
@@ -27,7 +32,7 @@ class client(object):
         try:
             self.client.connect(self.__server)
             ret_bytes = self.client.recv(1024)
-            #接收服务端消息
+            # 接收服务端消息
             ret_str = str(ret_bytes, encoding='utf-8')
             if ret_str == "OK":
                 return code.CONN_SUCC
@@ -48,11 +53,11 @@ class client(object):
                                                  passwd=passwd)
         self.client.sendall(bytes(sendmsg,encoding='utf-8'))
         ret_bytes = self.client.recv(1024)
-        #获取服务端返回的认证状态信息
+        # 获取服务端返回的认证状态信息
         auth_info = str(ret_bytes, encoding='utf-8')
         if auth_info == "success":
             self.username = user
-            #获取服务端返回用户空间信息
+            # 获取服务端返回用户空间信息
             user_info = str(self.client.recv(1024),encoding='utf-8')
             self.totalspace = int(user_info.split("|")[0])
             self.userspace = int(user_info.split("|")[1])
@@ -66,39 +71,39 @@ class client(object):
         while True:
             username = str(input("请输入用户名：")).strip()
             password = str(input("请输入密码：")).strip()
-            #对密码进行md5加密
+            # 对密码进行md5加密
             password = common.md5(password)
-            #登录认证
+            # 登录认证
             auth_status = self.check_auth(username,password)
             if auth_status == code.AUTH_SUCC:
-                common.message(">>>>>>>登录成功","INFO")
+                common.message(">>>>>>>登录成功", "INFO")
                 return True
             elif auth_status == code.AUTH_USER_ERROR:
-                common.message(">>>>>>>用户名不存在","ERROR")
+                common.message(">>>>>>>用户名不存在", "ERROR")
                 return False
             else:
-                common.message(">>>>>>>用户名或密码错误！","ERROR")
+                common.message(">>>>>>>用户名或密码错误！", "ERROR")
                 return False
 
-    def mk(self,command):
+    def mk(self, command):
         """
         创建目录
         :param command: 发送命令消息格式；mk|test或mk|/test/yj
         :return:
         """
-        #发送命令消息给服务端
+        # 发送命令消息给服务端
         self.client.sendall(bytes(command,encoding='utf-8'))
-        #接收服务端发来的回应消息
+        # 接收服务端发来的回应消息
         mk_msg = str(self.client.recv(1024), encoding='utf-8')
         mk_msg = int(mk_msg)
         if mk_msg == code.FILE_MK_SUCC:
-            common.message(">>>>>>>创建目录成功","INFO")
+            common.message(">>>>>>>创建目录成功", "INFO")
         elif mk_msg == code.FILE_MK_FAIL:
-            common.message(">>>>>>>创建目录失败","ERROR")
+            common.message(">>>>>>>创建目录失败", "ERROR")
         else:
-            common.message(">>>>>>>请输入文件夹名","ERROR")
+            common.message(">>>>>>>请输入文件夹名", "ERROR")
 
-    def delete(self,command):
+    def delete(self, command):
         """
         删除目录或文件名
         :param command: delete|PycharmProjects/untitled/project/FTPv1/FTPServer/upload/admin/test/aa
@@ -112,19 +117,19 @@ class client(object):
         reve_delfilename_fsize = int(del_msg.split("|")[1])
 
         if del_msg == code.FOLDER_DEL_SUCC:
-            common.message(">>>>>>>删除目录成功","INFO")
+            common.message(">>>>>>>删除目录成功", "INFO")
         elif reve_status == code.FILE_DEL_SUCC:
-            #更新用户空间配额大小
+            # 更新用户空间配额大小
             self.userspace -= reve_delfilename_fsize
-            common.message(">>>>>>>删除文件名成功","INFO")
+            common.message(">>>>>>>删除文件名成功", "INFO")
         elif reve_status == code.FILE_DEL_FAIL:
-            common.message(">>>>>>>删除目录或文件名失败","ERROR")
+            common.message(">>>>>>>删除目录或文件名失败", "ERROR")
         elif reve_status == code.FILE_DEL_EMPTY:
-            common.message(">>>>>>>当前目录下不是空目录，无法删除！","ERROR")
+            common.message(">>>>>>>当前目录下不是空目录，无法删除！", "ERROR")
         else:
-            common.message(">>>>>>>命令行请输入需要删除的路径目录或文件名!","ERROR")
+            common.message(">>>>>>>命令行请输入需要删除的路径目录或文件名!", "ERROR")
 
-    def cd(self,command):
+    def cd(self, command):
         """
         切换目录路径
         :param command: cd|.. 或cd|foldername
@@ -134,7 +139,7 @@ class client(object):
         self.client.sendall(bytes(command, encoding='utf-8'))
         # 接收服务端发来的回应消息
         cd_msg = str(self.client.recv(1024), encoding='utf-8')
-        result_status,result_folder = cd_msg.split("|")
+        result_status, result_folder = cd_msg.split("|")
         if result_status == "0":
             result_value = "当前是根目录"
         elif result_status == "1":
@@ -143,9 +148,9 @@ class client(object):
             result_value = "切换失败, {0} 不是一个目录".format(result_folder)
         elif result_status == "3":
             result_value = "命令无效：{0}".format(result_folder)
-        common.message(result_value,"INFO")
+        common.message(result_value, "INFO")
 
-    def ls(self,*args):
+    def ls(self, *args):
         """
         显示客户端的文件列表详细信息
         :param args:
@@ -181,7 +186,7 @@ class client(object):
         except Exception as e:
             logger.error("client ls:{0}".format(e))
 
-    def put(self,command):
+    def put(self, command):
         """
         上传文件
         :param command: put|folderfile
@@ -200,18 +205,18 @@ class client(object):
                                                                   filemd5=fmd5)
             self.client.send(bytes(file_msg, encoding='utf8'))
             logger.info("send file info: {0}".format(file_msg))
-            #接收来自服务端数据
+            # 接收来自服务端数据
             put_msg = str(self.client.recv(1024),encoding='utf-8')
             try:
-                #正常上传文件
+                # 正常上传文件
                 if put_msg == "ok":
-                    #判断是否超过用户空间配额
+                    # 判断是否超过用户空间配额
                     if self.userspace + fsize > self.totalspace:
                         common.message("用户磁盘空间不足,无法上传文件,请联系管理员!","ERROR")
                     else:
                         self.userspace += fsize
                         new_size = 0
-                        with open(file_name,'rb') as f:
+                        with open(file_name, 'rb') as f:
                             for line in f:
                                 self.client.sendall(line)
                                 new_size += len(line)
@@ -219,19 +224,19 @@ class client(object):
                                 common.progress_bar(new_size,fsize)
                                 if new_size >= fsize:
                                     break
-                #断点续传文件
+                # 断点续传文件
                 if put_msg.split("|")[0] == "continue":
                     send_size = int(put_msg.split("|")[1])
-                    common.message("服务端存在此文件，但未上传完，开始断点续传......","INFO")
+                    common.message("服务端存在此文件，但未上传完，开始断点续传......", "INFO")
                     new_size = 0
                     with open(file_name,'rb') as f:
-                        #用seek来进行文件指针的偏移，实现断点续传的功能
+                        # 用seek来进行文件指针的偏移，实现断点续传的功能
                         f.seek(send_size)
                         while fsize - send_size > 1024:
                             revedata = f.read(1024)
                             self.client.sendall(revedata)
                             new_size += len(revedata)
-                            #打印上传进度条
+                            # 打印上传进度条
                             common.progress_bar(new_size, fsize)
                         else:
                             revedata = f.read(fsize - send_size)
@@ -239,7 +244,7 @@ class client(object):
                             # 打印上传进度条
                             common.progress_bar(new_size, fsize)
 
-                #不存在断点文件情况，询问是否覆盖掉原文件
+                # 不存在断点文件情况，询问是否覆盖掉原文件
                 if put_msg == "full":
                     inp_msg = common.message("服务端存在完整文件，是否覆盖掉原文件[输入y或n]：","INFO")
                     inp = str(input(inp_msg)).strip().lower()
@@ -249,7 +254,7 @@ class client(object):
                             for line in f:
                                 self.client.sendall(line)
                                 new_size += len(line)
-                                #打印上传进度条
+                                # 打印上传进度条
                                 common.progress_bar(new_size, fsize)
                                 if new_size >= fsize:
                                     break

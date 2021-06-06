@@ -3,9 +3,16 @@
 __author__ = 'yinjia'
 
 
-import os,sys,logging,hashlib,time
+import hashlib
+import logging
+import os
+import sys
+import time
+
+from FTPClient.config import settings
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from config import settings
+
 
 class Logger(object):
     """

@@ -1,14 +1,18 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 __author__ = 'yinjia'
 
-import os,sys
+import os
+import sys
+
+from FTPServer.bin import ftpserver
+from FTPServer.config import settings, template
+from FTPServer.dbhelper import dbapi
+from FTPServer.lib import common
+from FTPServer.lib.user import Users
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from config import settings,template
-from lib import common
-from lib.user import Users
-from bin import ftpserver
-from dbhelper import dbapi
+
 
 def run():
     while True:
@@ -16,7 +20,7 @@ def run():
                                           menu2="[2] 添加用户",
                                           menu3="[3] 删除用户",
                                           menu4="[4] 结束程序")
-        print("\33[34;0m", menu,"\33[0m")
+        print("\33[34;0m", menu, "\33[0m")
         num = str(input("请按编号选择：")).strip()
         if num == "1":
             ftpserver.process()
